@@ -8,7 +8,7 @@
          FlutterApplication and put your custom class here. -->
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="grid_flame"
+        android:label="Sopa de letras en Flutter"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
