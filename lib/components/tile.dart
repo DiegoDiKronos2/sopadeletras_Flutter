@@ -66,10 +66,10 @@ class TileSet extends Component {
     rect = Rect.fromLTWH(posx, posy, game.tileSize, game.tileSize);
     //Rectángulo que confroma la hitbox del tile
     hitbox = Rect.fromLTWH(
-        posx + game.tileSize * 0.12,
-        posy + game.tileSize * 0.12,
-        game.tileSize * 0.75,
-        game.tileSize * 0.75);
+        posx + game.tileSize * 0.18,
+        posy + game.tileSize * 0.18,
+        game.tileSize * 0.65,
+        game.tileSize * 0.65);
 
     //Texto del tile
     paragraph = ParagraphBuilder(ParagraphStyle(
