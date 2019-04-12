@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:grid_flame/game.dart';
 
 class Backyard {
-  final MainGame game;
+  final SoupGame game;
   Rect bgRect;
 
   Backyard(this.game) {

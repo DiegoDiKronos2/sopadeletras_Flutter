@@ -5,6 +5,7 @@ import 'package:grid_flame/game.dart';
 
 class TileSet extends Component {
   final int tileID; //Identificador final de la casilla.
+  int answerID;     //Identificador de a qué respuesta pertenece este tile.
   final int column; //Columna en la que se encuentra del grid.
   final int row;    //Fila en la que se encuentra del grid.
 
@@ -12,7 +13,7 @@ class TileSet extends Component {
   bool clear = false;         //Identifica si la palabra ya ha sido completada.
 
   //Variables para la posición y renderizado.
-  final MainGame game;
+  final SoupGame game;
   ParagraphBuilder paragraph;
   Rect rect, hitbox;
   String char;

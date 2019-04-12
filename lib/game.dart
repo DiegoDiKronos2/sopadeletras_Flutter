@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' as dartUI;
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 import 'package:flame/util.dart';
@@ -8,10 +9,9 @@ import 'package:flutter/services.dart';
 import 'package:grid_flame/components/backyard.dart';
 import 'package:grid_flame/components/tile.dart';
 
-class MainGame extends BaseGame {
+class SoupGame extends BaseGame {
   Size screensize;
   double tileSize;
-  bool gridON = false;
   int gridSize;
   List<TileSet> grid = List<TileSet>();
   List<String> latinAlphabet = [
@@ -46,12 +46,17 @@ class MainGame extends BaseGame {
   List<String> words;
   List<List<TileSet>> answers;
   List<TileSet> currentAnswer;
+  List<bool> answersClear;
   int answerCounter;
-  bool answerError = false;
+  int answerError = 0;
+  TileSet currentTile = null;
 
+  //FLAGS-START
+  bool screenReady = false;
+  //FLAGS-END
   Backyard background;
 
-  MainGame(this.words,this.gridSize) {
+  SoupGame(this.words, this.gridSize) {
     initialize();
   }
   initialize() async {
@@ -109,12 +114,14 @@ class MainGame extends BaseGame {
     }
     //-------Ubicación de palabras-------//
     Random r = Random();
-    
+
     answers = List(words.length);
+    answersClear = List(words.length);
     int wordCount = 0;
     words.forEach((String word) {
       //Fijamos la palabra en mayúscula para evitar problemas.
       word = word.toUpperCase();
+      answersClear[wordCount] = false;
       //Le asignamos a una de las listas de palabras un largo igual al siuo.
       answers[wordCount] = List<TileSet>(word.length);
       //Variable para controlar el loop de establecer las palabras.
@@ -145,7 +152,7 @@ class MainGame extends BaseGame {
           */
           switch (r.nextInt(4)) {
             case 0:
-            //Comprobamos que la palabra no sea mas larga que las casillas disponibles
+              //Comprobamos que la palabra no sea mas larga que las casillas disponibles
               if (start.column + word.length > gridSize) {
                 throw (pathCorrect = false);
               }
@@ -165,7 +172,7 @@ class MainGame extends BaseGame {
               }
               break;
             case 1:
-            //Comprobamos que la palabra no sea mas larga que las casillas disponibles
+              //Comprobamos que la palabra no sea mas larga que las casillas disponibles
               if (start.row + word.length > gridSize) {
                 throw (pathCorrect = false);
               }
@@ -185,13 +192,15 @@ class MainGame extends BaseGame {
               }
               break;
             case 2:
-            //Comprobamos que la palabra no sea mas larga que las casillas disponibles
+              //Comprobamos que la palabra no sea mas larga que las casillas disponibles
               if (start.column + word.length > gridSize ||
                   start.row + word.length > gridSize) {
                 throw (pathCorrect = false);
               }
               //Comprobamos los tiles desde el inicial, al saltar en diagonal sumamos 1 por fila y el tamaño del grid por columna
-              for (int i = start.tileID; i < grid.length; i = i + gridSize + 1) {
+              for (int i = start.tileID;
+                  i < grid.length;
+                  i = i + gridSize + 1) {
                 TileSet temp = grid[i];
                 if (word.substring(tileNeeded).startsWith(temp.char) ||
                     temp.char == "@") {
@@ -206,13 +215,15 @@ class MainGame extends BaseGame {
               }
               break;
             case 3:
-            //Comprobamos que la palabra no sea mas larga que las casillas disponibles
+              //Comprobamos que la palabra no sea mas larga que las casillas disponibles
               if (start.column + word.length > gridSize ||
                   start.row - word.length < 0) {
                 throw (pathCorrect = false);
               }
               //Comprobamos los tiles desde el inicial, al saltar en diagonal hacia arriba restamos 1 por fila y suamos el tamaño del grid por columna
-              for (int i = start.tileID; i < grid.length; i = i + gridSize - 1) {
+              for (int i = start.tileID;
+                  i < grid.length;
+                  i = i + gridSize - 1) {
                 TileSet temp = grid[i];
                 if (word.substring(tileNeeded).startsWith(temp.char) ||
                     temp.char == "@") {
@@ -234,12 +245,15 @@ class MainGame extends BaseGame {
               tileIDs[i].charSet(word.substring(i, i + 1));
               tileIDs[i].hasAnswerChar = true;
               answers[wordCount][i] = tileIDs[i];
+              tileIDs[i].answerID = wordCount;
             }
             wordCount++;
           }
         }
       }
     });
+    //Confirmamos que la pantalla está lista para renderizar las respuestas.
+    screenReady = true;
 
     //-------Randomización de tiles vacíos-------//
     grid.forEach((TileSet tile) {
@@ -253,14 +267,32 @@ class MainGame extends BaseGame {
     //Renderiza todas las imágenes y textos.
     background.render(c);
     grid.forEach((TileSet tile) => tile.render(c));
+    if (screenReady == true) {
+      double x = grid[gridSize - 1].posx;
+      double y = grid[gridSize - 1].posy + this.tileSize.round();
+      for (int i = 0; i < words.length; i++) {
+        var form = dartUI.ParagraphBuilder(dartUI.ParagraphStyle(
+            fontStyle: FontStyle.normal,
+            textAlign: TextAlign.left,
+            textDirection: TextDirection.ltr,
+            fontSize: this.tileSize / 1.5));
+        if(answersClear[i] == true){
+          form.pushStyle(dartUI.TextStyle(decoration: TextDecoration.lineThrough));
+        }
+        form.addText(words[i]);
+        dartUI.Paragraph ans = form.build()..layout(dartUI.ParagraphConstraints(width: this.tileSize*gridSize));;
+        y = y + tileSize.round();
+        c.drawParagraph(ans, Offset(x, y));
+      }
+    }
   }
 
   void update(double t) {}
 
   void resize(Size size) {
-    //Provee del tamaño de pantalla, del cual se establece el tamaño de los tiles en función del tamaño del grid.
+    //Provee del tamaño de pantalla, del cual se establece el de los tiles en función del grid.
     screensize = size;
-    tileSize = screensize.width / (gridSize+1);
+    tileSize = screensize.width / (gridSize + 1);
   }
 
   dynamic onPanDown(DragDownDetails d) {
@@ -268,7 +300,7 @@ class MainGame extends BaseGame {
 
     //Contadores de tiles correctos seleccionados y de errores.
     answerCounter = 0;
-    answerError = false;
+    answerError = 0;
     /*
     Para todos los tiles se comprueba su posición para saber con cual se ha
     hecho contacto. Si es un tile que INICIA una palabra se establece la misma
@@ -299,24 +331,30 @@ class MainGame extends BaseGame {
       */
       if (tile.hitbox.contains(d.globalPosition)) {
         tile.onTapDown();
-        if (currentAnswer[answerCounter].isCorrectAnswer(tile.tileID)) {
-          answerCounter++;
-          if (answerCounter == currentAnswer.length && answerError == true) {
-            currentAnswer.forEach((TileSet ans) {
-              ans.congrats();
-            });
-            answerCounter = 0;
-            answerError = false;
+        if (tile != currentTile) {
+          currentTile = tile;
+          if (currentAnswer[answerCounter].isCorrectAnswer(tile.tileID)) {
+            answerCounter++;
+            print(answerCounter.toString());
+            if (answerCounter == currentAnswer.length && answerError <= 1) {
+              currentAnswer.forEach((TileSet ans) {
+                ans.congrats();
+                answersClear[ans.answerID] = true;
+              });
+              answerCounter = 0;
+              answerError = 0;
+            }
+          } else {
+            answerError++;
+            print(answerError.toString());
           }
-        } else {
-          answerError = true;
         }
       }
     });
   }
 
   dynamic onPanEnd(DragEndDetails d) {
-    //Este método se activa al levantar el dedo de la pantlla, restablece 
+    //Este método se activa al levantar el dedo de la pantlla, restablece
     //los tiles sleccionados que no se hayan resuelto a su color original.
     grid.forEach((TileSet tile) {
       tile.reset();
